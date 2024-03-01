@@ -43,7 +43,7 @@
                     android:layout_marginBottom="16dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:srcCompat="@drawable/rename1" />
+                    app:srcCompat="@drawable/r1" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
