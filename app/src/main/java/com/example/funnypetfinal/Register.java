@@ -18,12 +18,20 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Register extends AppCompatActivity {
 
@@ -31,6 +39,8 @@ public class Register extends AppCompatActivity {
     EditText mPersonName, mEmail, mPassword, mConfirmPassword;
     Button mRegisterBtn;
     FirebaseAuth mAuth;
+
+    CollectionReference usersCollection;
 
 
     @SuppressLint("MissingInflatedId")
@@ -50,6 +60,8 @@ public class Register extends AppCompatActivity {
 
         //Firebase___________________________________________________________________________________
         mAuth = FirebaseAuth.getInstance();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        usersCollection = db.collection("users");
         //---------------------------------
 
         backFromRegister.setOnClickListener(new View.OnClickListener() {
@@ -138,13 +150,44 @@ public class Register extends AppCompatActivity {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful()) {
-                    sendVerificationEmail();
+                    FirebaseUser user = mAuth.getCurrentUser();
+                    if (user != null) {
+                        String userId = user.getUid();
+                        String personName = mPersonName.getText().toString().trim();
+
+                        // Create a HashMap to store user data
+                        Map<String, Object> userData = new HashMap<>();
+                        userData.put("name", personName);
+
+                        // Add user data to Firestore
+                        usersCollection.document(userId)
+                                .set(userData)
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        Log.d(TAG, "DocumentSnapshot successfully written!");
+                                        sendVerificationEmail();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        Log.e(TAG, "Error registering user: " + e.getMessage());
+                                        mRegisterBtn.setEnabled(true);
+                                        Toast.makeText(Register.this, "Oops! Failed to register user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+
+                    }
+                } else {
+                    mRegisterBtn.setEnabled(true);
+                    Toast.makeText(Register.this, "Oops! Failed to register user", Toast.LENGTH_SHORT).show();
                 }
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                if (e instanceof FirebaseAuthUserCollisionException) { //email already registered
+                if (e instanceof FirebaseAuthUserCollisionException) { // Email already registered
                     mRegisterBtn.setEnabled(true);
                     mEmail.setError("Email Already Registered");
                     mEmail.requestFocus();
@@ -155,6 +198,7 @@ public class Register extends AppCompatActivity {
             }
         });
     }
+
     //-------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -163,7 +207,6 @@ public class Register extends AppCompatActivity {
         if (mAuth.getCurrentUser() != null) {
             FirebaseUser user = mAuth.getCurrentUser();
             UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                    .setDisplayName(mPersonName.getText().toString().trim())
                     .build();
 
             user.updateProfile(profileUpdates)

@@ -22,8 +22,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
 
 public class Login extends AppCompatActivity {
     EditText mEmail, mPassword;
@@ -31,9 +34,8 @@ public class Login extends AppCompatActivity {
     TextView createNewAccount, forgotPassword;
     ImageView btnGoogle;
     GoogleSignInOptions gso;
-    GoogleSignInClient gsc;
-
-
+    GoogleSignInClient mGoogleSignInClient;
+    private static final int RC_SIGN_IN = 9001;
     FirebaseAuth mAuth;
 
     @Override
@@ -41,22 +43,15 @@ public class Login extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        //findViewById___________________________________________________________________________________
         mEmail = findViewById(R.id.inputEmail);
         mPassword = findViewById(R.id.inputConformPassword);
         mLoginBtn = findViewById(R.id.btnLogin);
         createNewAccount = findViewById(R.id.createNewAccount);
         forgotPassword = findViewById(R.id.forgotPassword);
         btnGoogle = findViewById(R.id.btnGoogle);
-        //////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-        //Firebase________________________________________________________________________________________
         mAuth = FirebaseAuth.getInstance();
-        //////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-        //redirection to Register email&password______________________________________________________________________
         createNewAccount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -65,10 +60,7 @@ public class Login extends AppCompatActivity {
                 finish();
             }
         });
-        //////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-        //redirection to ForgotPassword email&password______________________________________________________________________
         forgotPassword.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -77,89 +69,88 @@ public class Login extends AppCompatActivity {
                 finish();
             }
         });
-        //////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-        //email&password login____________________________________________________________________________
         mLoginBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mLoginBtn.setEnabled(false);
                 String email = mEmail.getText().toString().trim();
                 String password = mPassword.getText().toString().trim();
 
                 if (email.isEmpty()) {
                     mEmail.setError("Enter Email");
                     mEmail.requestFocus();
+                    mLoginBtn.setEnabled(true);
                     return;
                 }
 
                 if (password.isEmpty()) {
                     mPassword.setError("Enter Password");
                     mPassword.requestFocus();
+                    mLoginBtn.setEnabled(true);
                     return;
                 }
 
                 loginUser(email, password);
             }
         });
-        //////////////////////////////////////////////////////////////////////////////////////////////////
 
+        // Configure Google Sign-In options
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken("585725909122-9jugissbukaf2cg1hip4seln229h93gr.apps.googleusercontent.com")
+                .requestEmail()
+                .build();
 
-        //sign in with Google_______________________________________________________________________________
-        gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build();
-        gsc = GoogleSignIn.getClient(this, gso);
-
-        GoogleSignInAccount accountGoogle = GoogleSignIn.getLastSignedInAccount(this);
-        if (accountGoogle != null){
-            navigateToMainActivity();
-        }
+        //initialize GoogleSignInClient
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
         btnGoogle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                signIn();
+                signInWithGoogle();
             }
         });
-        //////////////////////////////////////////////////////////////////////////////////////////////////
+    }
+
+    // Start Google Sign-In flow
+    private void signInWithGoogle() {
+        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        startActivityForResult(signInIntent, RC_SIGN_IN);
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        finishAffinity();
-    }
-
-
-
-    private void signIn() {
-        Intent signInInten = gsc.getSignInIntent();
-        startActivityForResult(signInInten, 1000);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1000){
+        if (requestCode == RC_SIGN_IN) {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
-                if (account != null) {
-                    navigateToMainActivity();
-                }
+                firebaseAuthWithGoogle(account);
             } catch (ApiException e) {
-                e.printStackTrace();
-                Log.e("GoogleSignIn", "signInResult:failed code=" + e.getStatusCode());
-                if (e.getStatusCode() == GoogleSignInStatusCodes.SIGN_IN_CANCELLED) {
-                    Toast.makeText(this, "Sign-in cancelled", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(this, "Error signing in with Google", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
+    private void firebaseAuthWithGoogle(GoogleSignInAccount account) {
+        AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            navigateToMainActivity();
+                        } else {
+                            Toast.makeText(Login.this, "Authentication failed.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
 
 
+    //navigate to the main activity
     private void navigateToMainActivity() {
         Intent intent = new Intent(Login.this, MainActivity.class);
         startActivity(intent);
@@ -184,6 +175,7 @@ public class Login extends AppCompatActivity {
                         } else {
                             Toast.makeText(Login.this, "Login failed. Please check your credentials", Toast.LENGTH_SHORT).show();
                         }
+                        mLoginBtn.setEnabled(true);
                     }
                 });
     }

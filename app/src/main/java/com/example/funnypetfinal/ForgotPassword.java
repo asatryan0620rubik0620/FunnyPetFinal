@@ -64,7 +64,7 @@ public class ForgotPassword extends AppCompatActivity {
     }
 
     private void resetPassword() {
-        btnResetPassword.setVisibility(View.INVISIBLE);
+        // btnResetPassword.setVisibility(View.INVISIBLE); // Убираем эту строку, чтобы кнопка не становилась невидимой
 
         mAuth.sendPasswordResetEmail(email).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
