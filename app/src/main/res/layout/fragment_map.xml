@@ -12,7 +12,7 @@
         android:layout_alignParentTop="true">
 
         <Button
-            android:id="@+id/buttonClinics"
+            android:id="@+id/btnClinics"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/black"
@@ -20,7 +20,7 @@
             android:text="Clinics" />
 
         <Button
-            android:id="@+id/buttonParks"
+            android:id="@+id/btnParks"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/black"
@@ -28,7 +28,7 @@
             android:text="Parks" />
 
         <Button
-            android:id="@+id/buttonEstablishment"
+            android:id="@+id/btnEstablishment"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/black"
@@ -36,7 +36,7 @@
             android:text="Establishment" />
 
         <Button
-            android:id="@+id/buttonShops"
+            android:id="@+id/btnShops"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/black"

@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -250,9 +251,9 @@ public class ProfileFragment extends Fragment {
                             // Load profile image from Firestore
                             String imageUrl = documentSnapshot.getString("profileImage");
                             if (imageUrl != null && !imageUrl.isEmpty()) {
-                                // Use Picasso or Glide to load the image into ImageView
-                                // For example, using Picasso:
-                                // Picasso.get().load(imageUrl).into(profileAvatar);
+                                Glide.with(this)
+                                        .load(imageUrl)
+                                        .into(profileAvatar);
                             }
                         } else {
                             Log.e(TAG, "User document does not exist");
